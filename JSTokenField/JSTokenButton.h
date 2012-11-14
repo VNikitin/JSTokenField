@@ -1,4 +1,7 @@
+// modified by Submarine
+// Copyright 2012 Valeriy Nikitin (Mistral). All rights reserved.
 //
+//  Original code
 //	Copyright 2011 James Addyman (JamSoft). All rights reserved.
 //	
 //	Redistribution and use in source and binary forms, with or without modification, are

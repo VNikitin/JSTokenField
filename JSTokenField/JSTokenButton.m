@@ -1,4 +1,7 @@
+// modified by Submarine
+// Copyright 2012 Valeriy Nikitin (Mistral). All rights reserved.
 //
+//  Original code
 //	Copyright 2011 James Addyman (JamSoft). All rights reserved.
 //	
 //	Redistribution and use in source and binary forms, with or without modification, are
@@ -41,8 +44,6 @@
 + (JSTokenButton *)tokenWithString:(NSString *)string representedObject:(id)obj
 {
 	JSTokenButton *button = (JSTokenButton *)[self buttonWithType:UIButtonTypeCustom];
-	[button setNormalBg:[[UIImage imageNamed:@"tokenNormal.png"] stretchableImageWithLeftCapWidth:14 topCapHeight:0]];
-	[button setHighlightedBg:[[UIImage imageNamed:@"tokenHighlighted.png"] stretchableImageWithLeftCapWidth:14 topCapHeight:0]];
 	[button setAdjustsImageWhenHighlighted:NO];
 	[button setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
 	[[button titleLabel] setFont:[UIFont fontWithName:@"Helvetica Neue" size:15]];
@@ -56,7 +57,18 @@
 	frame.size.width += 20;
 	frame.size.height = 25;
 	[button setFrame:frame];
-	
+    dispatch_queue_t aQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    dispatch_async(aQueue, ^ {
+        UIImage *normal = [[self class] imageForBackgroundSize:frame.size andHighlight:FALSE];
+        UIImage *highlighted = [[self class] imageForBackgroundSize:frame.size andHighlight:YES];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [button setBackgroundImage:normal forState:UIControlStateNormal];
+            [button setNormalBg:normal];
+            [button setHighlightedBg:highlighted];
+            [button setNeedsDisplay];
+        });
+    });
+    dispatch_release(aQueue);	
 	[button setToggled:NO];
 	
 	[button setRepresentedObject:obj];
@@ -119,6 +131,70 @@
 
 - (BOOL)canBecomeFirstResponder {
     return YES;
+}
+
+#pragma mark - Background
++ (UIImage *) imageForBackgroundSize:(CGSize)aSize andHighlight:(BOOL) highlight {
+    
+    CGRect rect = CGRectMake(0, 0, aSize.width, aSize.height);
+    CGFloat radius = CGRectGetHeight(rect) / 2.0;
+    
+    UIGraphicsBeginImageContextWithOptions(aSize, NO, 0.0);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    // Set the quality level to use when rescaling
+    CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
+    CGContextSetAllowsAntialiasing(context, TRUE);
+    CGContextSetShouldAntialias(context, TRUE);
+    
+    // background gradien
+    CGContextSaveGState(context);
+    
+    UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:rect cornerRadius:radius];
+    CGContextAddPath(context, path.CGPath);
+    CGContextClip(context);
+    
+    NSArray *colors = nil;
+    if (highlight) {
+        colors = [NSArray arrayWithObjects:
+                  (id)[UIColor colorWithRed:0.322 green:0.541 blue:0.976 alpha:1.0].CGColor,
+                  (id)[UIColor colorWithRed:0.235 green:0.329 blue:0.973 alpha:1.0].CGColor,
+                  nil];
+    }
+    else {
+        colors = [NSArray arrayWithObjects:
+                  (id)[UIColor colorWithRed:0.863 green:0.902 blue:0.969 alpha:1.0].CGColor,
+                  (id)[UIColor colorWithRed:0.741 green:0.808 blue:0.937 alpha:1.0].CGColor,
+                  nil];
+    }
+    
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGGradientRef gradient = CGGradientCreateWithColors(colorSpace, (CFTypeRef)colors, NULL);
+    CGContextDrawLinearGradient(context, gradient, CGPointZero, CGPointMake(0, CGRectGetHeight(rect)), 0);
+    CGGradientRelease(gradient);
+    CGContextRestoreGState(context);
+    
+    //draw gradient border
+    CGContextSaveGState(context);
+    path = [UIBezierPath bezierPathWithRoundedRect:CGRectInset(rect, 0.5, 0.5) cornerRadius:radius];
+    CGContextAddPath(context, path.CGPath);
+    CGContextReplacePathWithStrokedPath(context);
+    CGContextClip(context);
+    CGFloat locations[2] = {0, 1};
+    
+    CGFloat components[8] = {0.662, 0.733, 0.909, 1.0, 0.486, 0.5216, 0.8275, 1.};
+    gradient = CGGradientCreateWithColorComponents(colorSpace, components, locations, 2);
+    CGContextDrawLinearGradient(context, gradient,  CGPointZero, CGPointMake(0, CGRectGetHeight(rect)), 0);
+    CGGradientRelease(gradient);
+    CGColorSpaceRelease(colorSpace);
+    CGContextRestoreGState(context);
+    
+    // return image
+    UIImage * img = UIGraphicsGetImageFromCurrentImageContext();
+    
+    UIGraphicsEndImageContext();
+    
+    return img;
 }
 
 @end
