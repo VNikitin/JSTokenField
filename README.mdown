@@ -1,4 +1,16 @@
-JSTokenField
+Fork  
+============
+- Create buttons background on-the-fly. No need additional images in your bundle  
+- gradient improvements     
+
+Screens  
+============
+![Example](https://github.com/VNikitin/JSTokenField/raw/master/Screen/screen.png "Screen")   
+
+
+
+
+Original code JSTokenField
 ============
 
 A token field that mimics the behaviour and functionality provided by Mail.app's recipient field.
